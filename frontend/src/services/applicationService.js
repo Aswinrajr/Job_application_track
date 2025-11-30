@@ -1,5 +1,5 @@
 // frontend/src/services/applicationService.js
-const API_URL = 'http://localhost:5000/api/applications';
+const API_URL = 'https://job-application-track-slrb.onrender.com/api/applications';
 
 const getAuthHeader = () => {
     const user = JSON.parse(localStorage.getItem('user'));

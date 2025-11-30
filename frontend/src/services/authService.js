@@ -1,5 +1,5 @@
 // frontend/src/services/authService.js
-const API_URL = 'http://localhost:5000/api/auth';
+const API_URL = 'https://job-application-track-slrb.onrender.com/api/auth';
 
 export const loginUser = async ({ email, password }) => {
     const response = await fetch(`${API_URL}/login`, {
