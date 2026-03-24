@@ -1,12 +1,16 @@
-// frontend/src/pages/ApplicationForm.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getApplication, createApplication, updateApplication } from '../services/applicationService';
+import { Input } from '../components/ui/Input';
+import Button from '../components/ui/Button';
+import { toast } from 'react-hot-toast';
 
-export default function ApplicationForm() {
-    const { id } = useParams();
+export default function ApplicationForm({ onCancel, isModal = false, id: propId }) {
+    const { id: paramId } = useParams();
+    const id = propId || paramId;
     const navigate = useNavigate();
     const [loading, setLoading] = useState(!!id);
+    const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
 
     const [formData, setFormData] = useState({
@@ -21,6 +25,7 @@ export default function ApplicationForm() {
         if (id) {
             const fetchApplication = async () => {
                 try {
+                    setLoading(true);
                     const data = await getApplication(id);
                     setFormData({
                         companyName: data.companyName,
@@ -31,6 +36,7 @@ export default function ApplicationForm() {
                     });
                 } catch (err) {
                     setError('Failed to fetch application');
+                    toast.error('Could not load application details');
                 } finally {
                     setLoading(false);
                 }
@@ -50,160 +56,114 @@ export default function ApplicationForm() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            setLoading(true);
+            setSaving(true);
             if (id) {
                 await updateApplication(id, formData);
+                toast.success('Application updated successfully');
             } else {
                 await createApplication(formData);
+                toast.success('Application created successfully');
             }
-            navigate('/applications');
+            
+            if (onCancel) {
+                onCancel();
+                // Optionally refresh listing
+                window.location.reload(); // Simple way to refresh for now
+            } else {
+                navigate('/dashboard/applications');
+            }
         } catch (err) {
-            setError(`Failed to ${id ? 'update' : 'create'} application: ${err.message}`);
+            setError(`Failed: ${err.message}`);
+            toast.error(err.message);
         } finally {
-            setLoading(false);
+            setSaving(false);
         }
     };
 
     if (loading && id) {
-        return <div>Loading...</div>;
+        return (
+            <div className="flex flex-col gap-4 animate-pulse">
+                <div className="h-10 bg-white/5 rounded-lg" />
+                <div className="h-10 bg-white/5 rounded-lg" />
+                <div className="h-32 bg-white/5 rounded-lg" />
+            </div>
+        );
     }
 
     return (
-        <div className="space-y-6 sm:px-6 lg:px-0 lg:col-span-9">
-            <div className="shadow sm:rounded-md sm:overflow-hidden">
-                <div className="bg-white py-6 px-4 space-y-6 sm:p-6">
-                    <div>
-                        <h3 className="text-lg leading-6 font-medium text-gray-900">
-                            {id ? 'Edit Application' : 'Add New Application'}
-                        </h3>
-                        <p className="mt-1 text-sm text-gray-500">
-                            {id ? 'Update the job application details.' : 'Enter the details of the job application.'}
-                        </p>
-                    </div>
+        <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Input
+                    label="Company Name"
+                    name="companyName"
+                    placeholder="e.g. Google, Stripe"
+                    required
+                    value={formData.companyName}
+                    onChange={handleChange}
+                />
 
-                    {error && (
-                        <div className="bg-red-50 border-l-4 border-red-400 p-4">
-                            <div className="flex">
-                                <div className="flex-shrink-0">
-                                    <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                                    </svg>
-                                </div>
-                                <div className="ml-3">
-                                    <p className="text-sm text-red-700">
-                                        {error}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                <Input
+                    label="Job Title"
+                    name="jobTitle"
+                    placeholder="e.g. Senior Software Engineer"
+                    required
+                    value={formData.jobTitle}
+                    onChange={handleChange}
+                />
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        <div className="grid grid-cols-6 gap-6">
-                            <div className="col-span-6 sm:col-span-3">
-                                <label htmlFor="companyName" className="block text-sm font-medium text-gray-700">
-                                    Company Name *
-                                </label>
-                                <input
-                                    type="text"
-                                    name="companyName"
-                                    id="companyName"
-                                    required
-                                    value={formData.companyName}
-                                    onChange={handleChange}
-                                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                />
-                            </div>
+                <div className="space-y-1.5">
+                    <label className="block text-sm font-medium text-app-muted ml-0.5">Status</label>
+                    <select
+                        name="status"
+                        value={formData.status}
+                        onChange={handleChange}
+                        className="w-full bg-app-dark border border-app-border rounded-lg px-4 py-2.5 text-sm text-white focus:border-accent/60 focus:ring-1 focus:ring-accent/20 outline-none transition-all"
+                    >
+                        <option value="Pending">Pending</option>
+                        <option value="Interview">Interview</option>
+                        <option value="Selected">Selected</option>
+                        <option value="Rejected">Rejected</option>
+                    </select>
+                </div>
 
-                            <div className="col-span-6 sm:col-span-3">
-                                <label htmlFor="jobTitle" className="block text-sm font-medium text-gray-700">
-                                    Job Title *
-                                </label>
-                                <input
-                                    type="text"
-                                    name="jobTitle"
-                                    id="jobTitle"
-                                    required
-                                    value={formData.jobTitle}
-                                    onChange={handleChange}
-                                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                />
-                            </div>
+                <Input
+                    label="Applied Date"
+                    type="date"
+                    name="appliedDate"
+                    required
+                    value={formData.appliedDate}
+                    onChange={handleChange}
+                />
 
-                            <div className="col-span-6 sm:col-span-3">
-                                <label htmlFor="status" className="block text-sm font-medium text-gray-700">
-                                    Status *
-                                </label>
-                                <select
-                                    id="status"
-                                    name="status"
-                                    value={formData.status}
-                                    onChange={handleChange}
-                                    className="mt-1 block w-full border border-gray-300 bg-white rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                >
-                                    <option value="Pending">Pending</option>
-                                    <option value="Interview">Interview</option>
-                                    <option value="Selected">Selected</option>
-                                    <option value="Rejected">Rejected</option>
-                                </select>
-                            </div>
-
-                            <div className="col-span-6 sm:col-span-3">
-                                <label htmlFor="appliedDate" className="block text-sm font-medium text-gray-700">
-                                    Applied Date *
-                                </label>
-                                <input
-                                    type="date"
-                                    name="appliedDate"
-                                    id="appliedDate"
-                                    required
-                                    value={formData.appliedDate}
-                                    onChange={handleChange}
-                                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                />
-                            </div>
-
-                            <div className="col-span-6">
-                                <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
-                                    Notes
-                                </label>
-                                <div className="mt-1">
-                                    <textarea
-                                        id="notes"
-                                        name="notes"
-                                        rows={4}
-                                        value={formData.notes}
-                                        onChange={handleChange}
-                                        className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-md"
-                                    />
-                                </div>
-                                <p className="mt-2 text-sm text-gray-500">
-                                    Add any additional notes about this application.
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="pt-5">
-                            <div className="flex justify-end">
-                                <button
-                                    type="button"
-                                    onClick={() => navigate('/applications')}
-                                    className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-                                >
-                                    {loading ? 'Saving...' : 'Save'}
-                                </button>
-                            </div>
-                        </div>
-                    </form>
+                <div className="md:col-span-2 space-y-1.5">
+                    <label className="block text-sm font-medium text-app-muted ml-0.5">Notes (Optional)</label>
+                    <textarea
+                        name="notes"
+                        rows={4}
+                        placeholder="Key requirements, referral info, or next steps..."
+                        value={formData.notes}
+                        onChange={handleChange}
+                        className="w-full bg-app-dark border border-app-border rounded-lg px-4 py-2.5 text-sm text-white placeholder-app-muted/60 focus:border-accent/60 focus:ring-1 focus:ring-accent/20 outline-none transition-all resize-none"
+                    />
                 </div>
             </div>
-        </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
+                <Button 
+                    type="button" 
+                    variant="ghost" 
+                    onClick={() => onCancel ? onCancel() : navigate('/dashboard/applications')}
+                >
+                    Cancel
+                </Button>
+                <Button 
+                    type="submit" 
+                    disabled={saving}
+                    className="min-w-[120px]"
+                >
+                    {saving ? 'Saving...' : (id ? 'Update' : 'Create')}
+                </Button>
+            </div>
+        </form>
     );
 }

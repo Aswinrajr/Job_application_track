@@ -1,12 +1,14 @@
-// frontend/src/pages/ForgotPassword.jsx
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { IoBriefcaseOutline, IoArrowForward, IoMailOutline } from 'react-icons/io5';
+import { Input } from '../components/ui/Input';
+import Button from '../components/ui/Button';
+import Card from '../components/ui/Card';
+import { toast } from 'react-hot-toast';
 
 export default function ForgotPassword() {
     const [email, setEmail] = useState('');
-    const [message, setMessage] = useState('');
-    const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const { resetPassword } = useAuth();
     const navigate = useNavigate();
@@ -15,74 +17,60 @@ export default function ForgotPassword() {
         e.preventDefault();
 
         try {
-            setMessage('');
-            setError('');
             setLoading(true);
             await resetPassword(email);
-            setMessage('Check your email for password reset instructions');
-            setTimeout(() => navigate('/login'), 3000);
+            toast.success('Check your email for reset instructions', { duration: 5000 });
+            setTimeout(() => navigate('/login'), 5000);
         } catch (err) {
-            setError('Failed to reset password: ' + err.message);
+            toast.error('Failed to reset password: ' + err.message);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-md w-full space-y-8">
-                <div>
-                    <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-                        Reset Password
-                    </h2>
-                    <p className="mt-2 text-center text-sm text-gray-600">
-                        Enter your email and we'll send you a link to reset your password
-                    </p>
-                </div>
-                {error && (
-                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-                        <span className="block sm:inline">{error}</span>
-                    </div>
-                )}
-                {message && (
-                    <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
-                        <span className="block sm:inline">{message}</span>
-                    </div>
-                )}
-                <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-                    <div className="rounded-md shadow-sm -space-y-px">
-                        <div>
-                            <label htmlFor="email" className="sr-only">
-                                Email address
-                            </label>
-                            <input
-                                id="email"
-                                name="email"
-                                type="email"
-                                autoComplete="email"
-                                required
-                                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                                placeholder="Email address"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                            />
-                        </div>
-                    </div>
+        <div className="min-h-screen flex items-center justify-center p-4 bg-app-dark relative overflow-hidden">
+            {/* Background blobs */}
+            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-accent/20 rounded-full blur-[120px] pointer-events-none" />
+            <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] bg-indigo-500/10 rounded-full blur-[100px] pointer-events-none" />
 
-                    <div>
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-                        >
-                            {loading ? 'Sending...' : 'Send Reset Link'}
-                        </button>
-                    </div>
-                </form>
-                <div className="text-center">
-                    <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
-                        Back to Sign In
-                    </Link>
+            <div className="w-full max-w-md relative z-10 animate-in fade-in slide-in-from-bottom-8 duration-700">
+                <div className="text-center mb-8">
+                   <div className="inline-flex w-16 h-16 rounded-2xl bg-accent items-center justify-center text-white shadow-[0_0_30px_rgba(99,102,241,0.4)] mb-6">
+                      <IoBriefcaseOutline size={32} />
+                   </div>
+                   <h2 className="text-3xl font-bold text-white tracking-tight mb-2">Reset Password</h2>
+                   <p className="text-app-muted">We'll send a secure link to your inbox.</p>
                 </div>
+
+                <Card className="p-8 backdrop-blur-xl bg-app-card/60">
+                    <form className="space-y-6" onSubmit={handleSubmit}>
+                        <Input
+                            label="Email Address"
+                            type="email"
+                            placeholder="name@company.com"
+                            required
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                        />
+
+                        <Button 
+                            type="submit" 
+                            className="w-full h-11" 
+                            disabled={loading}
+                        >
+                            {loading ? 'Sending link...' : 'Send reset link'}
+                            {!loading && <IoMailOutline className="ml-2" />}
+                        </Button>
+                    </form>
+
+                    <p className="mt-8 text-center text-sm text-app-muted">
+                        Remembered your password?{' '}
+                        <Link to="/login" className="text-white hover:text-accent font-semibold transition-colors underline underline-offset-4 decoration-white/20">
+                            Back to sign in
+                        </Link>
+                    </p>
+                </Card>
             </div>
         </div>
     );

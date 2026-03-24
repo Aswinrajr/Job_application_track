@@ -10,6 +10,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import ApplicationList from './pages/ApplicationList';
 import ApplicationForm from './pages/ApplicationForm';
 import Profile from './pages/Profile';
+import { Toaster } from 'react-hot-toast';
 
 // Wrapper to handle protected routes
 const AppRoutes = () => {
@@ -50,7 +51,17 @@ const AppRoutes = () => {
 function App() {
   return (
     <AuthProvider>
-      <div className="min-h-screen">
+      <div className="min-h-screen bg-app-dark text-white selection:bg-accent selection:text-white">
+        <Toaster 
+          position="top-right"
+          toastOptions={{
+            style: {
+              background: '#161616',
+              color: '#fff',
+              border: '1px solid rgba(255,255,255,0.1)',
+            },
+          }}
+        />
         <AppRoutes />
       </div>
     </AuthProvider>
